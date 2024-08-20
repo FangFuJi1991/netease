@@ -1,64 +1,92 @@
 import os
 import re
 import requests
+#导入库
 
-def get_playlist(playlist_id,cookie):
-    playlist_url = f"https://music.163.com/api/playlist/detail?id={playlist_id}"
-    playlist_list = requests.get(playlist_url,headers={"Cookie":cookie}).json()
-    
-    if not playlist_list["code"] == 200:
-        return(1)
-    
-    songs_count = len(playlist_list["result"]["tracks"])
-    print(f"Name:{playlist_list['result']['name']} ID:{playlist_list['result']['id']}")
-    if songs_count >= 2:
-        print(f"There are {songs_count} songs in this playlist.")
-    else:
-        print(f"There is {songs_count} song in this playlist.")
-        rerrr
-    return(playlist_list) #获取歌单然后返回一个列表
+def download(ids : int, path : str = "", name : str = ""):
+    if path == "":
+        path = f"./song/"
+    if name == "":
+        name = ids
+    #默认参数
 
-def download_playlist(playlist,mode="name",path=".//playlist//"):
-     #文件名非法字符会被转换成这个
-    if playlist["code"] != 200 or playlist == 1:
-        return(1)
-    playlist_path = f"{path}//{playlist['result'][mode]}"
-    if not os.path.exists(playlist_path):
-        os.makedirs(playlist_path) #没有文件夹就新建
-    
-    replace_character = ""
-    for song in playlist["result"]["tracks"]: #遍历歌单
-        song_url = f"https://music.163.com/song/media/outer/url?id={song['id']}"
-        song_name = re.sub(r"[\/\\\:\*\?\"\<\>\|]",replace_character,song[mode])
-        song_path = f"{playlist_path}//{song_name}.mp3" #替换非法字符
-        
-        if os.path.exists(song_path):
-            print(f"{song_name} is exist")
-            continue
-        
-        print(f"Downloading {song['name']}.")
-        with open(song_path, "wb") as song_file:
-            song_file.write(requests.get(song_url).content) #保存文件
-        print("Succeed.")
+    if os.path.exists(f"{ path }/{ name }.mp3"):
+        print("Exists\n")
+        return 1
+    #文件是否存在
 
-    return(0)
+    url = f"https://music.163.com/song/media/outer/url?id={ ids }"
+    song = requests.get(url)
+    #请求音乐
+
+    with open(f"{ path }/{ name }.mp3", "wb") as file:
+        file.write(song.content)
+    print("Succeed\n")
+    return 0
+    #写入文件
+
+def download_album(ids : int, path = "./album/", cookie : str = ""):
+    url = f"https://music.163.com/api/album/{ ids }"
+    album = requests.get(url, headers = {"Cookie" : f"{ cookie }"}).json()
+    #请求歌单
+
+    code = album["code"]
+    #状态码
+    if code == 200: #OK
+        album_name = album["album"]["name"]
+        songs = album["album"]["songs"]
+        songs_count = len(songs)
+        #赋值歌单数据
+
+        print(f"{ album_name }\n{ len(songs) } Songs")
+
+        album_name = re.sub(r'[\\/:*?"<>|]', "", album_name)
+        if not os.path.exists(f"{ path }/{ album_name }"):
+            os.makedirs(f"{ path }/{ album_name }")
+        #文件夹是否存在
+
+        for song in songs:
+            song_name = song["name"]
+            song_index = songs.index(song) + 1
+            #赋值歌曲数据
+
+            print(f"{ song_index }/{ songs_count } { song_name } ...")
+
+            song_name = f"{ song_index } - { re.sub(r'[\\/:*?"<>|]', "", song_name) }"
+            download(song["id"], f"{ path }/{ album_name }/", song_name)
+            #处理名称下载歌曲
+        print("Over")
+        return 0
+
+    elif code == 404: #未找到
+        print("Not Found")
+        return 404
+
+    elif code == -447: #服务器繁忙
+        print("Busy")
+        return 447
+
+    elif code == -462: #请输入Cookie
+        print("Restart And Enter Cookie")
+        return 462
+
+    else: #未知
+        print("Error")
+        return 1
+
+def download_playlist():
+    pass
+
 if __name__ == "__main__":
     try:
-        while True:
-            enter_id = input("Please enter playlist ID.")
-            if enter_id.isdigit():
-                break
-            print("This playlist ID is wrong.")
-        enter_mode = input("You can choose the file naming rule ( name (default) / id ) or you can skip.")
-        if enter_mode == "":
-            enter_mode = "name"
-        enter_path = input("You can set the path.( ./playlist/ )")
-        if enter_path == "":
-            enter_path = "./playlist/"
-        enter_cookie = input("Please enter your cookie.If you didn't enter cookie,you can only download 10 songs.")
-        if download_playlist(get_playlist(enter_id,enter_cookie),enter_mode,enter_path):
-            print("Over.")  
-    #except:
-        #print("Error.")
-    finally:
-        pass
+        mode = input("album / playlist\n")
+        #模式选择
+
+        if mode == "album": #专辑
+            download_album(int(input("ID\n")), input("Path ( ./album )\n") or "./album/", input("Cookie ( Empty )\n"))
+
+        elif mode == "playlist": #歌单
+            pass
+
+    except ValueError: #输入类型错误
+        print("Input Wrong")
