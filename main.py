@@ -28,7 +28,7 @@ def download(ids : int, path : str = "", name : str = ""):
 def download_album(ids : int, path = "./album/", cookie : str = ""):
     url = f"https://music.163.com/api/album/{ ids }"
     album = requests.get(url, headers = {"Cookie" : f"{ cookie }"}).json()
-    #请求歌单
+    #请求专辑
 
     code = album["code"]
     #状态码
@@ -36,7 +36,7 @@ def download_album(ids : int, path = "./album/", cookie : str = ""):
         album_name = album["album"]["name"]
         songs = album["album"]["songs"]
         songs_count = len(songs)
-        #赋值歌单数据
+        #赋值专辑数据
 
         print(f"{ album_name }\n{ len(songs) } Songs")
 
@@ -74,8 +74,54 @@ def download_album(ids : int, path = "./album/", cookie : str = ""):
         print("Error")
         return 1
 
-def download_playlist():
-    pass
+def download_playlist(ids : int, path = "./playlist/", cookie : str = ""):
+    url = f"https://music.163.com/api/playlist/detail?id={ ids }"
+    playlist = requests.get(url, headers = {"Cookie" : f"{ cookie }"}).json()
+    #请求歌单
+    
+    code = playlist["code"]
+    #状态码
+    if code == 200: #OK
+        playlist_name = playlist["result"]["name"]
+        songs = playlist["result"]["tracks"]
+        songs_count = len(songs)
+        #赋值歌单数据
+
+        print(f"{ playlist_name }\n{ len(songs) } Songs")
+
+        playlist_name = re.sub(r'[\\/:*?"<>|]', "", playlist_name)
+        if not os.path.exists(f"{ path }/{ playlist_name }"):
+            os.makedirs(f"{ path }/{ playlist_name }")
+        #文件夹是否存在
+
+        for song in songs:
+            song_name = song["name"]
+            song_index = songs.index(song) + 1
+            #赋值歌曲数据
+
+            print(f"{ song_index }/{ songs_count } { song_name } ...")
+
+            song_name = f"{ song_index } - { re.sub(r'[\\/:*?"<>|]', "", song_name) }"
+            download(song["id"], f"{ path }/{ playlist_name }/", song_name)
+            #处理名称下载歌曲
+        print("Over")
+        return 0
+
+    elif code == 404: #未找到
+        print("Not Found")
+        return 404
+
+    elif code == -447: #服务器繁忙
+        print("Busy")
+        return 447
+
+    elif code == -462: #请输入Cookie
+        print("Restart And Enter Cookie")
+        return 462
+
+    else: #未知
+        print("Error")
+        return 1
 
 if __name__ == "__main__":
     try:
@@ -83,10 +129,16 @@ if __name__ == "__main__":
         #模式选择
 
         if mode == "album": #专辑
-            download_album(int(input("ID\n")), input("Path ( ./album )\n") or "./album/", input("Cookie ( Empty )\n"))
+            enter_id = int(input("ID\n"))
+            enter_path = input("Path ( Default : ./album/ )\n") or "./album/"
+            enter_cookie = input("Cookie ( Default : None )\n")
+            download_album(enter_id, enter_path, enter_cookie)
 
         elif mode == "playlist": #歌单
-            pass
+            enter_id = int(input("ID\n"))
+            enter_path = input("Path ( Default : ./playlist/ )\n") or "./playlist/"
+            enter_cookie = input("Cookie ( Default : None )\n")
+            download_playlist(enter_id, enter_path, enter_cookie)
 
     except ValueError: #输入类型错误
         print("Input Wrong")
