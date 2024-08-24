@@ -48,11 +48,12 @@ def download_album(ids : int, path = "./album/", cookie : str = ""):
         for song in songs:
             song_name = song["name"]
             song_index = songs.index(song) + 1
+            song_fix = "0" * ( len(str(songs_count)) - len(str(song_index)) ) + str(song_index)
             #赋值歌曲数据
 
-            print(f"{ song_index }/{ songs_count } { song_name } ...")
+            print(f"{ songs_index }/{ songs_count } { song_name } ...")
 
-            song_name = f"{ song_index } - { re.sub(r'[\\/:*?"<>|]', "", song_name) }"
+            song_name = f"{ song_fix } - { re.sub(r'[\\/:*?"<>|]', "", song_name) }"
             download(song["id"], f"{ path }/{ album_name }/", song_name)
             #处理名称下载歌曲
         print("Over")
@@ -78,7 +79,7 @@ def download_playlist(ids : int, path = "./playlist/", cookie : str = ""):
     url = f"https://music.163.com/api/playlist/detail?id={ ids }"
     playlist = requests.get(url, headers = {"Cookie" : f"{ cookie }"}).json()
     #请求歌单
-    
+
     code = playlist["code"]
     #状态码
     if code == 200: #OK
@@ -101,7 +102,7 @@ def download_playlist(ids : int, path = "./playlist/", cookie : str = ""):
 
             print(f"{ song_index }/{ songs_count } { song_name } ...")
 
-            song_name = f"{ song_index } - { re.sub(r'[\\/:*?"<>|]', "", song_name) }"
+            song_name = re.sub(r'[\\/:*?"<>|]', "", song_name)
             download(song["id"], f"{ path }/{ playlist_name }/", song_name)
             #处理名称下载歌曲
         print("Over")
