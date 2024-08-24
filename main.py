@@ -51,7 +51,7 @@ def download_album(ids : int, path = "./album/", cookie : str = ""):
             song_fix = "0" * ( len(str(songs_count)) - len(str(song_index)) ) + str(song_index)
             #赋值歌曲数据
 
-            print(f"{ songs_index }/{ songs_count } { song_name } ...")
+            print(f"{ song_index }/{ songs_count } { song_name } ...")
 
             song_name = f"{ song_fix } - { re.sub(r'[\\/:*?"<>|]', "", song_name) }"
             download(song["id"], f"{ path }/{ album_name }/", song_name)
